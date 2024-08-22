@@ -53,7 +53,8 @@ public class StudentHandler : MonoBehaviourPunCallbacks
     }
 
     // Add a question to a random student, accessed by QuestionDispatcher once the audio is received
-    public void AddQuestion(AudioClip clip)
+    [PunRPC]
+    public void AddQuestion(byte[] audioBytes)
     {
         GameObject student = GetRandomStudent();
 
@@ -63,8 +64,22 @@ public class StudentHandler : MonoBehaviourPunCallbacks
             return;
         }
 
+        // Convert the byte array to a float array
+        float[] audioDataResponse = new float[audioBytes.Length / 2];
+        
+        // Turn into correct format
+        for (int i = 0; i < audioBytes.Length; i += 2)
+        {
+            short sample = BitConverter.ToInt16(audioBytes, i);
+            audioDataResponse[i / 2] = sample / 32768.0f;
+        }
+
+        // Create a new AudioClip and set the audio data
+        AudioClip audioClip = AudioClip.Create("ReceivedAudio", audioDataResponse.Length, 1, 24000, false);
+        audioClip.SetData(audioDataResponse, 0);
+
         SmartStudentController studentController = student.GetComponent<SmartStudentController>();
-        studentController.AddQuestion(clip);
+        studentController.AddQuestion(audioClip);
 
         // Add the student to the queue if it's not already there
         // in case the student is already in the queue, it's order will be preserved with a new question
@@ -75,6 +90,7 @@ public class StudentHandler : MonoBehaviourPunCallbacks
     }
 
     // Play the question of the first student in the queue
+    [PunRPC]
     private void PlayQuestion()
     {
         if (questionsQueue.Count <= 0)

@@ -5,6 +5,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections.Generic;
+using Photon.Pun;
 
 // Class to handle the communication between Unity and the server
 public class QuestionDispatcher : MonoBehaviour
@@ -16,6 +17,8 @@ public class QuestionDispatcher : MonoBehaviour
 
     private const int maxRetries = 10; // Maximum number of retries on server request
     private bool isTextOnly; // Flag to check if the question is text only
+    private PhotonView studentView,
+                textChatView;
 
     // Serialisable classes for JSON parsing
     [Serializable]
@@ -44,6 +47,8 @@ public class QuestionDispatcher : MonoBehaviour
     {
         studentHandler = GameObject.Find("StudentHandler").GetComponent<StudentHandler>();
         isTextOnly = false;
+        textChat = null;
+        studentView = studentHandler.GetComponent<PhotonView>();
     }
 
     // Initialize the student model, called on ConnectToServer.cs while creating the room
@@ -51,8 +56,6 @@ public class QuestionDispatcher : MonoBehaviour
     {
         // Initialize the student model on the server giving it the topic of the "lesson"
         StartCoroutine(SendTextToServer(text));
-
-        textChat = GameObject.Find("TextChat").GetComponent<TextChat>();
     }
 
     // Send an audio clip to the server
@@ -66,6 +69,7 @@ public class QuestionDispatcher : MonoBehaviour
             if (textChat == null)
             {
                 textChat = GameObject.Find("TextChat").GetComponent<TextChat>();
+                textChatView = textChat.GetComponent<PhotonView>();
             }
 
             StartCoroutine(SendAudioToServer(new Tuple<DateTime, AudioClip>((DateTime)date, clip), GetTextFromServer, 15, "http://127.0.0.1:5000/generate_written_question"));
@@ -73,7 +77,7 @@ public class QuestionDispatcher : MonoBehaviour
         
         else 
         {
-            StartCoroutine(SendAudioToServer(new Tuple<DateTime, AudioClip>((DateTime)date, clip), GetAudioFromServer, 5));
+            StartCoroutine(SendAudioToServer(new Tuple<DateTime, AudioClip>((DateTime)date, clip), GetAudioFromServer, 8));
         }
     }
 
@@ -224,23 +228,12 @@ public class QuestionDispatcher : MonoBehaviour
                 // Get the audio data from the response
                 byte[] audioBytes = Convert.FromBase64String(taskResult.value);
 
-                // Convert the byte array to a float array
-                float[] audioDataResponse = new float[audioBytes.Length / 2];
                 
-                // Turn into correct format
-                for (int i = 0; i < audioBytes.Length; i += 2)
-                {
-                    short sample = BitConverter.ToInt16(audioBytes, i);
-                    audioDataResponse[i / 2] = sample / 32768.0f;
-                }
-
-                // Create a new AudioClip and set the audio data
-                AudioClip audioClip = AudioClip.Create("ReceivedAudio", audioDataResponse.Length, 1, 24000, false);
-                audioClip.SetData(audioDataResponse, 0);
 
                 // Add the audio clip to the student model
-                // student.GetComponent<SmartStudentController>().AddQuestion(audioClip);
-                studentHandler.AddQuestion(audioClip);
+                // studentHandler.AddQuestion(audioClip);
+
+                studentView.RPC("AddQuestion", RpcTarget.AllBuffered, audioBytes);
             }
 
             www2.Dispose();
@@ -289,7 +282,9 @@ public class QuestionDispatcher : MonoBehaviour
 
             www2.Dispose();
 
-            textChat.SendMessageRpc("SmartStudent", textQuestion);
+            // textChat.SendMessageRpc("SmartStudent", textQuestion);
+
+            textChatView.RPC("SendMessageRpc", RpcTarget.AllBuffered, "SmartStudent", textQuestion, true);
         }
     }
 
