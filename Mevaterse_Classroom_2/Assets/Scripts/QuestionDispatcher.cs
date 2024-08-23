@@ -284,7 +284,7 @@ public class QuestionDispatcher : MonoBehaviour
 
             // textChat.SendMessageRpc("SmartStudent", textQuestion);
 
-            textChatView.RPC("SendMessageRpc", RpcTarget.AllBuffered, "SmartStudent", textQuestion, true);
+            // textChatView.RPC("SendMessageRpc", RpcTarget.AllBuffered, "SmartStudent", textQuestion, true);
         }
     }
 

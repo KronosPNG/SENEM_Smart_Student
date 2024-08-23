@@ -53,7 +53,6 @@ public class StudentHandler : MonoBehaviourPunCallbacks
     }
 
     // Add a question to a random student, accessed by QuestionDispatcher once the audio is received
-    [PunRPC]
     public void AddQuestion(byte[] audioBytes)
     {
         GameObject student = GetRandomStudent();
@@ -90,7 +89,6 @@ public class StudentHandler : MonoBehaviourPunCallbacks
     }
 
     // Play the question of the first student in the queue
-    [PunRPC]
     private void PlayQuestion()
     {
         if (questionsQueue.Count <= 0)
