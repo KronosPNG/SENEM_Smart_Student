@@ -1,9 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 // Class to handle the appearance of the smart students
-public class StudentApperance : MonoBehaviour
+public class StudentApperance : MonoBehaviourPun
 {    
     private List<SkinnedMeshRenderer> haircuts,
                                     uniforms,
@@ -18,6 +19,21 @@ public class StudentApperance : MonoBehaviour
                                 selectedBrows,
                                 selectedBeard,
                                 selectedGlasses;
+    
+    public int selectedHaircutIndex,
+                selectedUniformIndex,
+                selectedEyesIndex,
+                selectedBrowsIndex,
+                selectedBeardIndex,
+                selectedGlassesIndex;
+    
+    public Color32 uniformColor,
+                    hairColor,
+                    eyeColor,
+                    skinColor,
+                    tieColor,
+                    lipsColor,
+                    glassesColor;
                             
     private ColorData colorData;
 
@@ -34,14 +50,29 @@ public class StudentApperance : MonoBehaviour
 
         LoadMeshes(GetComponentsInChildren<Transform>());
 
-        selectedHaircut = SelectRandomMesh(haircuts);
-        selectedUniform = SelectRandomMesh(uniforms);
-        selectedEyes = SelectRandomMesh(eyes);
-        selectedBrows = SelectRandomMesh(brows);
-        selectedBeard = SelectRandomMesh(beards);
-        selectedGlasses = SelectRandomMesh(glasses);
+        if(photonView.IsMine)
+        {
+            selectedHaircutIndex = Random.Range(0, haircuts.Count);
+            selectedUniformIndex = Random.Range(0, uniforms.Count);
+            selectedEyesIndex = Random.Range(0, eyes.Count);
+            selectedBrowsIndex = Random.Range(0, brows.Count);
+            selectedBeardIndex = Random.Range(0, beards.Count);
+            selectedGlassesIndex = Random.Range(0, glasses.Count); 
+        }
 
-        SetRandomColors();        
+        selectedHaircut = SelectMesh(haircuts, selectedHaircutIndex);
+        selectedUniform = SelectMesh(uniforms, selectedUniformIndex);
+        selectedEyes = SelectMesh(eyes, selectedEyesIndex);
+        selectedBrows = SelectMesh(brows, selectedBrowsIndex);
+        selectedBeard = SelectMesh(beards, selectedBeardIndex);
+        selectedGlasses = SelectMesh(glasses, selectedGlassesIndex);
+
+        if(photonView.IsMine)
+        {
+            LoadColors();
+            SetColors();
+        }
+
     }
 
     private SkinnedMeshRenderer SelectMesh(List<SkinnedMeshRenderer> list, int selected)
@@ -71,28 +102,25 @@ public class StudentApperance : MonoBehaviour
         return SelectMesh(list, random);
     }
 
-    private void SetRandomColors(){
+
+    private void SetColors(){
         foreach (Material m in selectedUniform.materials)
         {
             if (m.name.Equals("Trousers (Instance)"))
-                m.color = colorData.GetUniformColors()[UnityEngine.Random.Range(0, colorData.GetUniformColors().Count)];
+                m.color = uniformColor;
 
             else if (m.name.Equals("Eyecolor (Instance)"))
-                m.color = colorData.GetEyeColors()[UnityEngine.Random.Range(0, colorData.GetEyeColors().Count)];
+                m.color = eyeColor;
 
             else if (m.name.Equals("Skin (Instance)"))
-                m.color = colorData.GetSkinTones()[UnityEngine.Random.Range(0, colorData.GetSkinTones().Count)];
+                m.color = skinColor;
 
             else if (m.name.Equals("Tie (Instance)"))
-                m.color = colorData.GetTieColors()[UnityEngine.Random.Range(0, colorData.GetTieColors().Count)];
+                m.color = tieColor;
 
             else if (m.name.Equals("Lipstick (Instance)"))
-                m.color = colorData.GetLipsColors()[UnityEngine.Random.Range(0, colorData.GetLipsColors().Count)];
+                m.color = lipsColor;
         }
-
-        List<Color32> hairColors = colorData.GetHairColors();
-
-        Color32 hairColor = hairColors[UnityEngine.Random.Range(0, hairColors.Count)];
 
         selectedHaircut.material.color = hairColor;
         selectedBrows.material.color = hairColor;
@@ -101,7 +129,46 @@ public class StudentApperance : MonoBehaviour
         foreach (Material m in selectedGlasses.materials)
         {
             if (m.name.Equals("Glasses (Instance)"))
-                m.color = colorData.GetGlassesColors()[UnityEngine.Random.Range(0, colorData.GetGlassesColors().Count)];
+                m.color = glassesColor;
+        }
+    }
+
+    private void LoadColors(){
+        foreach (Material m in selectedUniform.materials)
+        {
+            if (m.name.Equals("Trousers (Instance)"))
+            {
+                uniformColor = colorData.GetUniformColors()[UnityEngine.Random.Range(0, colorData.GetUniformColors().Count)];
+            }
+
+            else if (m.name.Equals("Eyecolor (Instance)"))
+            {
+                eyeColor = colorData.GetEyeColors()[UnityEngine.Random.Range(0, colorData.GetEyeColors().Count)];
+            }              
+
+            else if (m.name.Equals("Skin (Instance)"))
+            {
+                skinColor = colorData.GetSkinTones()[UnityEngine.Random.Range(0, colorData.GetSkinTones().Count)];
+            }
+                
+            else if (m.name.Equals("Tie (Instance)"))
+            {
+                tieColor = colorData.GetTieColors()[UnityEngine.Random.Range(0, colorData.GetTieColors().Count)];
+            }
+                
+
+            else if (m.name.Equals("Lipstick (Instance)"))
+            {
+                lipsColor = colorData.GetLipsColors()[UnityEngine.Random.Range(0, colorData.GetLipsColors().Count)];
+            }
+        }
+
+        hairColor = colorData.GetHairColors()[UnityEngine.Random.Range(0, colorData.GetHairColors().Count)];
+
+        foreach (Material m in selectedGlasses.materials)
+        {
+            if (m.name.Equals("Glasses (Instance)"))
+                glassesColor = colorData.GetGlassesColors()[UnityEngine.Random.Range(0, colorData.GetGlassesColors().Count)];
         }
     }
 
@@ -128,6 +195,48 @@ public class StudentApperance : MonoBehaviour
                 uniforms.Add(child.GetComponent<SkinnedMeshRenderer>());
         }
 
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        // if (stream.IsWriting)
+        // {
+        //     // Send data to other clients
+        //     stream.SendNext(selectedHaircutIndex);
+        //     stream.SendNext(selectedUniformIndex);
+        //     stream.SendNext(selectedEyesIndex);
+        //     stream.SendNext(selectedBrowsIndex);
+        //     stream.SendNext(selectedBeardIndex);
+        //     stream.SendNext(selectedGlassesIndex);
+
+        //     stream.SendNext((Color32)uniformColor);
+        //     stream.SendNext((Color32)hairColor);
+        //     stream.SendNext((Color32)eyeColor);
+        //     stream.SendNext((Color32)skinColor);
+        //     stream.SendNext((Color32)tieColor);
+        //     stream.SendNext((Color32)lipsColor);
+        //     stream.SendNext((Color32)glassesColor);
+        // }
+        // else
+        // {
+        //     // Receive data from other clients
+        //     selectedHaircutIndex = (int)stream.ReceiveNext();
+        //     selectedUniformIndex = (int)stream.ReceiveNext();
+        //     selectedEyesIndex = (int)stream.ReceiveNext();
+        //     selectedBrowsIndex = (int)stream.ReceiveNext();
+        //     selectedBeardIndex = (int)stream.ReceiveNext();
+        //     selectedGlassesIndex = (int)stream.ReceiveNext();
+
+        //     uniformColor = (Color32)stream.ReceiveNext();
+        //     hairColor = (Color32)stream.ReceiveNext();
+        //     eyeColor = (Color32)stream.ReceiveNext();
+        //     skinColor = (Color32)stream.ReceiveNext();
+        //     tieColor = (Color32)stream.ReceiveNext();
+        //     lipsColor = (Color32)stream.ReceiveNext();
+        //     glassesColor = (Color32)stream.ReceiveNext();
+        // }
+
+        // SetColors();
     }
 
 }

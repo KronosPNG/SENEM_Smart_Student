@@ -233,7 +233,7 @@ public class QuestionDispatcher : MonoBehaviour
                 // Add the audio clip to the student model
                 // studentHandler.AddQuestion(audioClip);
 
-                studentView.RPC("AddQuestion", RpcTarget.AllBuffered, audioBytes);
+                // studentView.RPC("AddQuestion", RpcTarget.AllBuffered, audioBytes);
             }
 
             www2.Dispose();

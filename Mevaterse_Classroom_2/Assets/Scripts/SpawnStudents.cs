@@ -96,12 +96,36 @@ public class SpawnStudents : MonoBehaviourPunCallbacks
                 PhotonTransformView photonTransformView = student.GetComponent<PhotonTransformView>();
                 PhotonAnimatorView photonAnimatorView = student.GetComponent<PhotonAnimatorView>();
 
-                AddObservedComponents(photonTransformView);
-                AddObservedComponents(photonAnimatorView);
+                if (photonTransformView != null)
+                {
+                    AddObservedComponents(photonTransformView);
+                }
+                else
+                {
+                    Debug.LogError("PhotonTransformView component is missing on the Student prefab!");
+                }
+
+                if (photonAnimatorView != null)
+                {
+                    AddObservedComponents(photonAnimatorView);
+                }
+                else
+                {
+                    Debug.LogError("PhotonAnimatorView component is missing on the Student prefab!");
+                }
 
                 photonView.ObservedComponents = new List<Component>(observedComponents);
-            }
 
+                // Ensure that the PhotonAnimatorView is properly configured
+                if (photonAnimatorView != null && photonAnimatorView.GetSynchronizedLayers().Count == 0)
+                {
+                    Debug.LogWarning("PhotonAnimatorView has no synchronized layers. Please configure it to synchronize the required animation layers.");
+                }
+                if (photonAnimatorView != null && photonAnimatorView.GetSynchronizedParameters().Count == 0)
+                {
+                    Debug.LogWarning("PhotonAnimatorView has no synchronized parameters. Please configure it to synchronize the required animation parameters.");
+                }
+            }
             else
             {
                 Debug.LogError("PhotonView component is missing on the Student prefab!");
